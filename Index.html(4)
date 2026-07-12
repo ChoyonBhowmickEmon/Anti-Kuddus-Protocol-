@@ -1,0 +1,65 @@
+if (query.toLowerCase().includes(kw.toLowerCase()) || kw.toLowerCase().includes(query.toLowerCase())) {
+                        const kwRegex = new RegExp(`(${escapeRegex(kw)})`, 'gi');
+                        highlightedContent = highlightedContent.replace(kwRegex, '<mark>$1</mark>');
+                    }
+                });
+
+                return `
+                    <div class="fact-card">
+                        <div class="rule-title"><i class="fas fa-book" style="margin-right:8px;"></i>${rule.title}</div>
+                        <div class="rule-content">${highlightedContent}</div>
+                    </div>
+                `;
+            }).join('');
+
+            showToast(`${results.length}টি নিয়ম পাওয়া গেছে`, 'success');
+        }
+
+        const factSearchInputEl = document.getElementById('factSearchInput');
+        if (factSearchInputEl) {
+            factSearchInputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') searchFact();
+            });
+        }
+
+        const codeInputEl = document.getElementById('codeInput');
+        if (codeInputEl) {
+            codeInputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') handleLogin();
+            });
+        }
+
+        const rollInputEl = document.getElementById('rollInput');
+        if (rollInputEl) {
+            rollInputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('codeInput').focus();
+            });
+        }
+
+        function init() {
+            loadState();
+            initStudents();
+            initLedger();
+
+            updateStrikeBar();
+            renderComplaints();
+
+            renderStudents();
+            renderGrid();
+
+            updateLedgerUI();
+
+            renderSosAlerts();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
