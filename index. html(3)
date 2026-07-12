@@ -1,0 +1,376 @@
+if (matches) {
+                    matches.forEach(m => {
+                        const clean = m.trim().replace(/[:;,\-—]/g, '').trim();
+                        if (clean.length > 3 && clean.length < 100) {
+                            const isGarbage = garbagePhrases.some(g => clean.toLowerCase().includes(g.toLowerCase()));
+                            if (!isGarbage && !topics.includes(clean)) {
+                                topics.push(clean);
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (topics.length === 0) {
+                const lines = text.split(/[।\n.]+/).map(l => l.trim()).filter(l => l.length > 5);
+                lines.forEach(line => {
+                    if (/^[০-৯]+[.)\]】:]/.test(line) || /^[-•●▪️▸►]/.test(line)) {
+                        const clean = line.replace(/^[০-৯.)\]】：\-\s•●▪️▸►]+/, '').trim();
+                        if (clean.length > 3) {
+                            const isGarbage = garbagePhrases.some(g => clean.toLowerCase().includes(g.toLowerCase()));
+                            if (!isGarbage) topics.push(clean);
+                        }
+                    }
+                });
+            }
+
+            if (topics.length === 0) {
+                const sentences = text.split(/[।\n]+/).map(s => s.trim()).filter(s => s.length > 8);
+                sentences.forEach(s => {
+                    const isGarbage = garbagePhrases.some(g => s.toLowerCase().includes(g.toLowerCase()));
+                    if (!isGarbage && s.length < 120) {
+                        topics.push(s);
+                    }
+                });
+            }
+
+            const resultDiv = document.getElementById('syllabusResult');
+            if (!resultDiv) return;
+
+            if (topics.length === 0) {
+                resultDiv.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i>
+                        <p>কোনো পরীক্ষার বিষয় পাওয়া যায়নি। সিলেবাস টেক্সট আবার চেক করুন।</p>
+                    </div>
+                `;
+                return;
+            }
+            let garbageFound = [];
+            garbagePhrases.forEach(g => {
+                if (text.toLowerCase().includes(g.toLowerCase())) {
+                    garbageFound.push(g);
+                }
+            });
+
+            let html = '';
+            if (garbageFound.length > 0) {
+                html += `
+                    <div style="padding:12px 16px; background:rgba(230,57,70,0.06); border:1px solid rgba(230,57,70,0.15);
+                                border-radius:8px; margin-bottom:16px; font-size:0.82rem;">
+                        <span style="color:var(--accent); font-weight:600;"><i class="fas fa-trash" style="margin-right:6px;"></i>ফিল্টার করা হয়েছে:</span>
+                        <span style="color:var(--muted);">${garbageFound.join(', ')}</span>
+                    </div>
+                `;
+            }
+
+            html += `<p style="font-size:0.82rem; color:var(--success); margin-bottom:14px; font-weight:600;">
+                <i class="fas fa-check-circle" style="margin-right:6px;"></i>${topics.length}টি প্রকৃত পরীক্ষার বিষয় পাওয়া গেছে
+            </p>`;
+
+            topics.forEach((topic, i) => {
+                html += `
+                    <div class="summary-bullet">
+                        <span class="bullet-num">${i + 1}</span>
+                        <span>${topic}</span>
+                    </div>
+                `;
+            });
+
+            resultDiv.innerHTML = html;
+            showToast(`${topics.length}টি বিষয় বের করা হয়েছে`, 'success');
+        }
+
+        let cashChartInstance = null;
+        let foodChartInstance = null;
+        const CRICKET_BAT_PRICE = 1500;
+
+        const sampleLedger = [
+            { type: 'washroom', amount: 2, item: '', timestamp: Date.now() - 86400000 * 4 },
+            { type: 'tiffin', amount: 0, item: 'ভুনা চাল', timestamp: Date.now() - 86400000 * 3 },
+            { type: 'washroom', amount: 2, item: '', timestamp: Date.now() - 86400000 * 3 },
+            { type: 'washroom', amount: 2, item: '', timestamp: Date.now() - 86400000 * 2 },
+            { type: 'tiffin', amount: 0, item: 'স্যান্ডউইচ', timestamp: Date.now() - 86400000 * 2 },
+            { type: 'washroom', amount: 2, item: '', timestamp: Date.now() - 86400000 },
+            { type: 'tiffin', amount: 0, item: 'ফ্রায়েড রাইস', timestamp: Date.now() - 86400000 },
+            { type: 'washroom', amount: 2, item: '', timestamp: Date.now() },
+        ];
+
+        function initLedger() {
+            if (state.ledger.length === 0) {
+                state.ledger = [...sampleLedger];
+                saveState();
+            }
+        }
+
+        const ledgerTypeEl = document.getElementById('ledgerType');
+        if (ledgerTypeEl) {
+            ledgerTypeEl.addEventListener('change', function() {
+                const isWashroom = this.value === 'washroom';
+                document.getElementById('ledgerAmountGroup').style.display = isWashroom ? 'block' : 'none';
+                document.getElementById('ledgerItemGroup').style.display = isWashroom ? 'none' : 'block';
+            });
+        }
+
+        function addLedgerEntry() {
+            const type = document.getElementById('ledgerType').value;
+            let entry = { type, timestamp: Date.now() };
+
+            if (type === 'washroom') {
+                entry.amount = parseInt(document.getElementById('ledgerAmount').value) || 2;
+                entry.item = '';
+            } else {
+                const item = document.getElementById('ledgerItem').value.trim();
+                if (!item) { showToast('খাবারের নাম দিন', 'warning'); return; }
+                entry.amount = 0;
+                entry.item = item;
+            }
+
+            state.ledger.push(entry);
+            saveState();
+
+            document.getElementById('ledgerItem').value = '';
+            document.getElementById('ledgerAmount').value = '2';
+
+            updateLedgerUI();
+            showToast('এন্ট্রি সংরক্ষিত হয়েছে', 'success');
+        }
+
+        function updateLedgerUI() {
+            const totalCash = state.ledger.filter(e => e.type === 'washroom').reduce((sum, e) => sum + e.amount, 0);
+            const totalFood = state.ledger.filter(e => e.type === 'tiffin').length;
+            const bats = Math.floor(totalCash / CRICKET_BAT_PRICE);
+
+            const totalCashEl = document.getElementById('totalCash');
+            const totalFoodEl = document.getElementById('totalFood');
+            const cricketBatsEl = document.getElementById('cricketBats');
+
+            if (totalCashEl) totalCashEl.textContent = totalCash + '৳';
+            if (totalFoodEl) totalFoodEl.textContent = totalFood;
+            if (cricketBatsEl) cricketBatsEl.textContent = bats;
+
+            renderLedgerList();
+            updateCharts();
+        }
+
+        function renderLedgerList() {
+            const list = document.getElementById('ledgerList');
+            if (!list) return;
+            if (state.ledger.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding:20px;"><p>কোনো এন্ট্রি নেই</p></div>';
+                return;
+            }
+
+            list.innerHTML = state.ledger.slice().reverse().slice(0, 20).map(e => {
+                const isCash = e.type === 'washroom';
+                return `
+                    <div class="ledger-entry">
+                         <div class="entry-icon ${isCash ? 'cash' : 'food'}">
+                            <i class="fas ${isCash ? 'fa-money-bill-wave' : 'fa-utensils'}"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:0.82rem;">
+                                ${isCash ? e.amount + ' টাকা ওয়াশরুম টোল' : e.item + ' টিফিন চুরি'}
+                            </div>
+                            <div style="font-size:0.7rem; color:var(--muted);">${formatTime(e.timestamp)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateCharts() {
+            const cashByDay = {};
+            state.ledger.filter(e => e.type === 'washroom').forEach(e => {
+                const day = new Date(e.timestamp).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' });
+                cashByDay[day] = (cashByDay[day] || 0) + e.amount;
+            });
+
+            const cashLabels = Object.keys(cashByDay);
+            const cashValues = Object.values(cashByDay);
+
+            const cashCanvas = document.getElementById('cashChart');
+            if (cashCanvas) {
+                if (cashChartInstance) cashChartInstance.destroy();
+                const cashCtx = cashCanvas.getContext('2d');
+                cashChartInstance = new Chart(cashCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: cashLabels.length ? cashLabels : ['ডেটা নেই'],
+                        datasets: [{
+                            label: 'টাকা',
+                            data: cashValues.length ? cashValues : [0],
+                            backgroundColor: 'rgba(243,156,18,0.3)',
+                            borderColor: 'rgba(243,156,18,0.8)',
+                            borderWidth: 1,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: '#6b6b80', font: { size: 11 } }, grid: { color: 'rgba(37,37,53,0.5)' } },
+                            y: { ticks: { color: '#6b6b80', font: { size: 11 } }, grid: { color: 'rgba(37,37,53,0.5)' }, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            const foodCount = {};
+            state.ledger.filter(e => e.type === 'tiffin').forEach(e => {
+                foodCount[e.item] = (foodCount[e.item] || 0) + 1;
+            });
+
+            const foodLabels = Object.keys(foodCount);
+            const foodValues = Object.values(foodCount);
+            const foodColors = ['#e63946', '#f4a261', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c', '#e74c3c'];
+
+            const foodCanvas = document.getElementById('foodChart');
+            if (foodCanvas) {
+                if (foodChartInstance) foodChartInstance.destroy();
+                const foodCtx = foodCanvas.getContext('2d');
+                foodChartInstance = new Chart(foodCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: foodLabels.length ? foodLabels : ['ডেটা নেই'],
+                        datasets: [{
+                            data: foodValues.length ? foodValues : [1],
+                            backgroundColor: foodLabels.length ? foodColors.slice(0, foodLabels.length) : ['rgba(37,37,53,0.5)'],
+                            borderColor: '#11111b',
+                            borderWidth: 3,
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#6b6b80', font: { size: 11 }, padding: 12, usePointStyle: true }
+                            }
+                        },
+                        cutout: '60%'
+                    }
+                });
+            }
+        }
+
+        function triggerSOS() {
+            const location = document.getElementById('sosLocation').value;
+            const alert = {
+                id: Date.now(),
+                location: location,
+                timestamp: Date.now(),
+                status: 'active'
+            };
+
+            state.sosAlerts.push(alert);
+            saveState();
+            renderSosAlerts();
+            showToast(`${locationNames[location]} থেকে SOS পাঠানো হয়েছে!`, 'error');
+        }
+
+        function resolveSos(id) {
+            const alert = state.sosAlerts.find(a => a.id === id);
+            if (alert) {
+                alert.status = 'resolved';
+                saveState();
+                renderSosAlerts();
+                showToast('অ্যালার্ট সমাধান করা হয়েছে', 'success');
+            }
+        }
+
+        function renderSosAlerts() {
+            const container = document.getElementById('sosAlerts');
+            const countEl = document.getElementById('activeSosCount');
+            if (!container) return;
+            const active = state.sosAlerts.filter(a => a.status === 'active');
+            if (countEl) countEl.textContent = active.length + ' টি অ্যালার্ট';
+
+            if (active.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-shield-alt"></i><p>কোনো অ্যাক্টিভ SOS অ্যালার্ট নেই</p></div>';
+                return;
+            }
+
+            container.innerHTML = active.slice().reverse().map(a => `
+                <div class="sos-alert">
+                    <div style="width:44px; height:44px; border-radius:50%; background:rgba(230,57,70,0.15);
+                                display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="fas fa-exclamation-triangle" style="color:var(--accent); font-size:1.1rem;"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700; color:var(--accent); font-size:0.95rem; font-family:'Rajdhani',sans-serif;">
+                            SOS — ${locationNames[a.location]}
+                        </div>
+                        <div style="font-size:0.78rem; color:var(--muted); margin-top:2px;">
+                            <i class="fas fa-clock" style="margin-right:4px;"></i>${formatTime(a.timestamp)}
+                        </div>
+                    </div>
+                    <button class="btn btn-success btn-sm" onclick="resolveSos(${a.id})">
+                        <i class="fas fa-check"></i> সমাধান
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        const schoolRules = [
+            { title: 'ক্লাস ক্যাপ্টেনের ক্ষমতা', content: 'ক্লাস ক্যাপ্টেন শুধুমাত্র শ্রেণিকক্ষে অনুপস্থিতির সময় শৃঙ্খলা রক্ষার দায়িত্ব পান। ক্যাপ্টেনের কোনো নির্বাহী ক্ষমতা নেই এবং তিনি এককভাবে কোনো সিদ্ধান্ত নিতে পারবেন না।', keywords: ['ক্যাপ্টেন', 'ক্ষমতা', 'সিদ্ধান্ত', 'নেতা', 'দায়িত্ব', 'capta', 'power'] },
+            { title: 'হোমওয়ার্ক ছাড়', content: 'স্কুলের কোনো নিয়মে ক্লাস ক্যাপ্টেনকে হোমওয়ার্ক থেকে ছাড় দেওয়ার ক্ষমতা দেওয়া হয়নি। সকল শিক্ষার্থীকে সমানভাবে হোমওয়ার্ক জমা দিতে হবে।', keywords: ['হোমওয়ার্ক', 'ছাড়', 'homeork', 'homework', 'exempt', 'বাদ'] },
+            { title: 'টিফিনের কর', content: 'কোনো শিক্ষার্থীর টিফিন থেকে জোরপূর্বক বা আধা-জোর করে খাবার বা টাকা নেওয়া সম্পূর্ণ নিষিদ্ধ। এটি শাস্তিযোগ্য অপরাধ হিসেবে গণ্য হবে।', keywords: ['টিফিন', 'খাবার', 'চুরি', 'কর', 'টাকা', 'tiffin', 'tax', 'food', 'চাঁদা'] },
+            { title: 'ওয়াশরুম ব্রেক', content: 'ফ্রি পিরিয়ডে বা প্রয়োজনে ওয়াশরুমে যাওয়ার জন্য কোনো অনুমতি বা ফি লাগবে না। এটি প্রতিটি শিক্ষার্থীর মৌলিক অধিকার।', keywords: ['ওয়াশরুম', 'টয়লেট', 'ব্রেক', 'ফি', 'টাকা', 'washroom', 'toilet', 'fee', 'বাথরুম'] },
+            { title: 'সিট প্ল্যান নিয়ম', content: 'সিট প্ল্যান শুধুমাত্র ক্লাস টিচার নির্ধারণ করবেন। ক্যাপ্টেনের সিট প্ল্যান পরিবর্তনের কোনো ক্ষমতা নেই। উচ্চতা অনুযায়ী সাজানোর কোনো অফিসিয়াল নিয়ম নেই।', keywords: ['সিট', 'প্ল্যান', 'বসা', 'সারি', 'উচ্চতা', 'seat', 'plan', 'arrange'] },
+            { title: 'PT পিরিয়ড নিয়ম', content: 'PT পিরিয়ডে সকল শিক্ষার্থীকে অংশগ্রহণ করতে হবে। ক্যাপ্টেনের PT পিরিয়ডের কার্যক্রম পরিবর্তনের অধিকার নেই। লুডু বা অন্য কোনো ইনডোর গেম দিয়ে PT পিরিয়ড বদলানো যাবে না।', keywords: ['PT', 'খেলা', 'লুডু', 'দৌড়', 'পিরিয়ড', 'sports', 'ludo', 'exercise'] },
+            { title: 'ক্লাস টেস্ট সিলেবাস', content: 'ক্লাস টেস্টের সিলেবাস বিষয় শিক্ষক নির্ধারণ করবেন। ক্যাপ্টেন নিজে সিলেবাস বাড়াতে বা কমাতে পারবেন না। লেখকের জীবনী, বইয়ের বারকোড, ইনডেক্স ইত্যাদি পরীক্ষার সিলেবাসের অংশ নয়।', keywords: ['সিলেবাস', 'টেস্ট', 'পরীক্ষা', 'অধ্যায়', 'বারকোড', 'জীবনী', 'syllabus', 'test', 'exam', 'chapter'] },
+            { title: 'ক্যাপ্টেন নির্বাচন', content: 'ক্যাপ্টেন নির্বাচন গণতান্ত্রিক প্রক্রিয়ায় হবে। নির্বাচিত হওয়ার পর发明 ক্যাপ্টেন তার প্রতিশ্রুতি পালন করতে বাধ্য। প্রতিশ্রুতি ভঙ্গ করলে তাকে অপসারণ করা যাবে।', keywords: ['নির্বাচন', 'ভোট', 'প্রতিশ্রুতি', 'অপসারণ', 'ইমপিচ', 'election', 'vote', 'promise', 'impeach'] },
+            { title: 'দ্বিতীয় ও তৃতীয় ক্যাপ্টেনের ভূমিকা', content: 'দ্বিতীয় ক্যাপ্টেন (বিল্টু) ও তৃতীয় ক্যাপ্টেন (মিল্টু) প্রথম ক্যাপ্টেনের সিদ্ধান্তে সমান অংশীদার। প্রথম ক্যাপ্টেন তাদের উপেক্ষা করে একক সিদ্ধান্ত নিতে পারবেন না।', keywords: ['দ্বিতীয়', 'তৃতীয়', 'বিল্টু', 'মিল্টু', 'সহকারী', '2nd', '3rd', 'vice'] },
+            { title: 'শাস্তির ক্ষমতা', content: 'ক্যাপ্টেনের কোনো শিক্ষার্থীকে শাস্তি দেওয়ার ক্ষমতা নেই। শাস্তি শুধুমাত্র ক্লাস টিচার বা বিভাগীয় প্রধান দিতে পারবেন।', keywords: ['শাস্তি', 'বেত', 'দণ্ড', 'মার', 'punishment', 'beat', 'hit'] },
+            { title: 'হেডমাস্টারের নির্দেশ', content: 'হেডমাস্টারের নামে ভুয়া নিয়ম বানানো শাস্তিযোগ্য অপরাধ। হেডমাস্টারের কোনো নির্দেশ মৌখিকভাবে জানানো হলে তা লিখিতভাবে যাচাই করতে হবে।', keywords: ['হেডমাস্টার', 'প্রিন্সিপাল', 'নির্দেশ', 'headmaster', 'principal', 'order'] },
+            { title: 'অভিভাবক সমাবেশ', content: 'কোনো শিক্ষার্থী চাইলে অভিভাবকদের কাছে ক্যাপ্টেনের অত্যাচারের কথা জানাতে পারবে। ক্যাপ্টেন কাউকে এই অধিকার থেকে বিরত রাখতে পারবে না।', keywords: ['অভিভাবক', 'অভিযোগ', 'জানানো', 'parent', 'complain', 'report'] }
+        ];
+
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function searchFact() {
+            const query = document.getElementById('factSearchInput').value.trim().toLowerCase();
+            if (!query || query.length < 2) {
+                showToast('কিছু লিখে সার্চ করুন', 'warning');
+                return;
+            }
+
+            const results = [];
+            schoolRules.forEach(rule => {
+                const keywordMatch = rule.keywords.some(kw => query.includes(kw.toLowerCase()) || kw.toLowerCase().includes(query));
+                const contentMatch = rule.content.toLowerCase().includes(query) || rule.title.toLowerCase().includes(query);
+
+                if (keywordMatch || contentMatch) {
+                    results.push(rule);
+                }
+            });
+
+            const container = document.getElementById('factResults');
+            if (!container) return;
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="card">
+                        <div class="empty-state">
+                            <i class="fas fa-question-circle" style="color:var(--warning);"></i>
+                            <p>"${query}" — এই বিষয়ে কোনো নিয়ম পাওয়া যায়নি</p>
+                            <p style="font-size:0.78rem; margin-top:8px; color:var(--muted);">ভিন্ন শব্দ দিয়ে আবার চেষ্টা করুন</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = results.map(rule => {
+                let highlightedContent = rule.content;
+                if (query.length > 0) {
+                    const queryRegex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+                    highlightedContent = highlightedContent.replace(queryRegex, '<mark>$1</mark>');
+                }
+
+                rule.keywords.forEach(kw => {
+   
