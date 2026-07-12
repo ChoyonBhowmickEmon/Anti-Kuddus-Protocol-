@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Kuddus Protocol | Class 7B Resistance</title>
+    <!-- Tailwind CSS এবং Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Rajdhani', 'sans-serif'],
+                        body: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: { 900: '#080810', 800: '#0e0e1a', 700: '#14141f', 600: '#1a1a2e', 500: '#252538' },
+                        rebel: { 500: '#e63946', 400: '#ff4757', 300: '#ff6b6b', 600: '#c0392b' },
+                        ember: { 500: '#f4a261', 400: '#ffd166' },
+                        mint: { 500: '#2ecc71', 400: '#55efc4' },
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- আলাদা করা এক্সটার্নাল সিএসএস ফাইল লিঙ্ক -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="প্রধান নেভিগেশন">
+        <div class="sidebar-logo">
+            <h1><i class="fas fa-shield-halved" style="margin-right:6px;"></i>AKP</h1>
+            <p>Anti-Kuddus Protocol v1.0</p>
+        </div>
+        <nav class="nav-list">
+            <div class="nav-item active" data-panel="m1" onclick="switchPanel('m1')" tabindex="0" role="button" aria-label="মিশন ১: স্ট্রাইক পোর্টাল">
+                <i class="fas fa-gavel"></i>
+                <span>স্ট্রাইক পোর্টাল</span>
+                <span class="badge" id="strikeBadge">0/3</span>
+            </div>
+            <div class="nav-item" data-panel="m2" onclick="switchPanel('m2')" tabindex="0" role="button" aria-label="মিশন ২: সিট প্ল্যানার">
+                <i class="fas fa-th-large"></i>
+                <span>সিট প্ল্যানার</span>
+            </div>
+            <div class="nav-item" data-panel="m3" onclick="switchPanel('m3')" tabindex="0" role="button" aria-label="মিশন ৩: সিলেবাস পার্সার">
+                <i class="fas fa-file-alt"></i>
+                <span>সিলেবাস পার্সার</span>
+            </div>
+            <div class="nav-item" data-panel="m4" onclick="switchPanel('m4')" tabindex="0" role="button" aria-label="মিশন ৪: অর্থনৈতিক লেজার">
+                <i class="fas fa-coins"></i>
+                <span>অর্থনৈতিক লেজার</span>
+            </div>
+            <div class="nav-item" data-panel="m5" onclick="switchPanel('m5')" tabindex="0" role="button" aria-label="মিশন ৫: SOS ফ্লেয়ার">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>SOS রেসকিউ ফ্লেয়ার</span>
+            </div>
+            <div class="nav-item" data-panel="m6" onclick="switchPanel('m6')" tabindex="0" role="button" aria-label="মিশন ৬: ফ্যাক্ট চেকার">
+                <i class="fas fa-search"></i>
+                <span>ফ্যাক্ট চেকার</span>
+            </div>
+        </nav>
+        <div style="padding:16px 20px; border-top:1px solid var(--border); font-size:0.7rem; color:var(--muted);">
+            <i class="fas fa-user-secret" style="margin-right:4px;"></i> বিল্টু ও মিল্টুর অপারেশন
+        </div>
+    </aside>
+
+    <div class="main-content" id="mainContent">
+        <header class="top-bar">
+            <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="মেনু টগল">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="status-dot"></div>  
+        </header>
+
+        <section class="panel active" id="panel-m1" aria-label="স্ট্রাইক পোর্টাল">
+            <div id="loginPanel" class="login-panel">
+                <div class="lock-icon"><i class="fas fa-lock"></i></div>
+                <h3 style="font-family:'Rajdhani',sans-serif; font-size:1.6rem; font-weight:700; margin-bottom:8px;">সুরক্ষিত প্রবেশ</h3>
+                <p style="color:var(--muted); font-size:0.85rem; margin-bottom:28px;">রোল নম্বর ও গোপন কোড দিন</p>
+                <div class="card" style="text-align:left;">
+                    <div class="form-group">
+                        <label class="form-label" for="rollInput">রোল নম্বর</label>
+                        <input type="number" class="form-input" id="rollInput" min="1" max="40" placeholder="যেমন: 12">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="codeInput">গোপন কোড</label>
+                        <input type="number" class="form-input" id="codeInput" placeholder="বিল্টু যে কোড দিয়েছে">
+                    </div>
+                    <button class="btn btn-primary" style="width:100%;" onclick="handleLogin()">
+                        <i class="fas fa-sign-in-alt"></i> প্রবেশ করুন
+                    </button>
+                    <div class="hint-text">
+                        <i class="fas fa-info-circle"></i>
+                        ডেমো হিসেবে: কোড =  (রোল × ৭ + ৩) % ১০০
+                    </div>
+                </div>
+            </div>
+
+            <div id="complaintPanel" style="display:none;">
+                <div class="card" style="margin-bottom:24px;">
+                    <div class="card-title"><i class="fas fa-bolt"></i> ইমপিচমেন্ট প্রোগ্রেস</div>
+                    <div class="strike-bar-container">
+                        <div class="strike-bar-fill" id="strikeBarFill" style="width:0%;">
+                            <span id="strikeBarText">0/3</span>
+                        </div>
+                        <span class="strike-label">Strikes until Impeachment</span>
+                    </div>
+                    <p style="text-align:center; margin-top:12px; font-size:0.82rem; color:var(--muted);" id="strikeMessage">
+                        আরও অভিযোগ জমা দিন কুদ্দুসকে হটাতে!
+                    </p>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-pen"></i> নতুন অভিযোগ</div>
+                        <div class="form-group">
+                            <label class="form-label" for="complaintCategory">ক্যাটাগরি</label>
+                            <select class="form-select" id="complaintCategory">
+                                <option value="">ক্যাটাগরি নির্বাচন করুন</option>
+                                <option value="tifin_theft">টিফিন চুরি</option>
+                                <option value="bribe">ঘুষ (ওয়াশরুম টোল)</option>
+                                <option value="syllabus_bloat">সিলেবাস ব্লোট</option>
+                                <option value="seat_plan">মানব ঢাল সিট প্ল্যান</option>
+                                <option value="sports_abuse">খেলাধুলা নিয়ন্ত্রণ</option>
+                                <option value="other">অন্যান্য</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="complaintText">বিবরণ</label>
+                            <textarea class="form-textarea" id="complaintText" placeholder="কুদ্দুস কী করেছে বিস্তারিত লিখুন..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="submitComplaint()">
+                            <i class="fas fa-paper-plane"></i> গোপনে জমা দিন
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-list"></i> জমা পড়া অভিযোগ</div>
+                        <div id="complaintList">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>এখনো কোনো অভিযোগ নেই</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="panel-m2" aria-label="সিট প্ল্যানার">
+            <div style="display:grid; grid-template-columns: 340px 1fr; gap:20px;">
+                <div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-user-plus"></i> শিক্ষার্থী যোগ করুন</div>
+                        <div class="form-group">
+                            <label class="form-label" for="stuName">নাম</label>
+                            <input type="text" class="form-input" id="stuName" placeholder="নাম লিখুন">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="stuRoll">রোল</label>
+                            <input type="number" class="form-input" id="stuRoll" min="1" max="99" placeholder="রোল নম্বর">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="stuHeight">উচ্চতা (সে.মি.)</label>
+                            <input type="number" class="form-input" id="stuHeight" min="100" max="200" placeholder="যেমন: 155">
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary btn-sm" onclick="addStudent()">
+                                <i class="fas fa-plus"></i> যোগ
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="addKuddus()">
+                                <i class="fas fa-crown"></i> কুদ্দুস যোগ
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">
+                            <i class="fas fa-users"></i> শিক্ষার্থী তালিকা
+                            <span style="margin-left:auto; font-size:0.75rem; color:var(--muted);" id="studentCount">0 জন</span>
+                        </div>
+                        <div id="studentList" style="max-height:300px; overflow-y:auto;"></div>
+                        <button class="btn btn-success btn-sm" style="width:100%; margin-top:12px;" onclick="autoArrange()">
+                            <i class="fas fa-magic"></i> উচ্চতা অনুযায়ী সাজান
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-chalkboard"></i> ক্লাসরুম লেআউট</div>
+                    <div style="text-align:center; margin-bottom:8px;">
+                        <span class="grid-label" style="display:inline-block; padding:6px 20px; background:rgba(243,156,18,0.1); border:1px solid rgba(243,156,18,0.2); border-radius:6px; color:var(--ember);">
+                            <i class="fas fa-chalkboard-teacher"></i> শিক্ষকের টেবিল
+                        </span>
+                    </div>
+                    <div id="classroomGrid" class="classroom-grid" style="grid-template-columns: repeat(6, 1fr);"></div>
+                    <div style="margin-top:16px; display:flex; gap:16px; justify-content:center; font-size:0.72rem; color:var(--muted);">
+                        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.3);vertical-align:middle;margin-right:4px;"></span> ছোট</span>
+                        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.3);vertical-align:middle;margin-right:4px;"></span> মাঝারি</span>
+                        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(230,57,70,0.12);border:1px solid rgba(230,57,70,0.3);vertical-align:middle;margin-right:4px;"></span> লম্বা</span>
+                        <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:rgba(230,57,70,0.6);border:1px solid var(--accent);vertical-align:middle;margin-right:4px;"></span> কুদ্দুস</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="panel-m3" aria-label="সিলেবাস পার্সার">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-paste"></i> কুদ্দুসের সিলেবাস পেস্ট করুন</div>
+                    <div class="form-group">
+                        <label class="form-label" for="syllabusInput">সম্পূর্ণ সিলেবাস টেক্সট</label>
+                        <textarea class="form-textarea" id="syllabusInput" style="min-height:320px;" placeholder="কুদ্দুস যে ভয়ানক সিলেবাস দিয়েছে সেটা এখানে পেস্ট করুন...&#10;&#10;উদাহরণ:&#10;অধ্যায় ১ থেকে অধ্যায় ৭ পর্যন্ত সব পড়বে। লেখকের জীবনী, বইয়ের ইনডেক্স, পেছনের কভারের বারকোড, প্রকাশকের ঠিকানা, ISBN নম্বর — সব আসবে। পরীক্ষা ১০ নম্বরের হলেও তোমাদের সব পড়তে হবে।"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="parseSyllabus()">
+                        <i class="fas fa-cogs"></i> বিশ্লেষণ করুন
+                    </button>
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fas fa-check-circle"></i> প্রকৃত পড়ার বিষয়</div>
+                    <div id="syllabusResult">
+                        <div class="empty-state">
+                            <i class="fas fa-clipboard-list"></i>
+                            <p>সিলেবাস পেস্ট করে বিশ্লেষণ করুন</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="panel-m4" aria-label="অর্থনৈতিক লেজার">
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-bottom:20px;">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCash">0</div>
+                    <div class="stat-label">মোট চাঁদাবাজি (টাকা)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalFood">0</div>
+                    <div class="stat-label">মোট চুরি হওয়া খাবার</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="cricketBats">0</div>
+                    <div class="stat-label">ক্রিকেট ব্যাট কেনা যাবে</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 340px 1fr; gap:20px;">
+                <div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-plus-circle"></i> নতুন এন্ট্রি</div>
+                        <div class="form-group">
+                            <label class="form-label" for="ledgerType">ধরন</label>
+                            <select class="form-select" id="ledgerType">
+                                <option value="washroom">ওয়াশরুম টোল (২ টাকা)</option>
+                                <option value="tiffin">টিফিন চুরি</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="ledgerAmountGroup">
+                            <label class="form-label" for="ledgerAmount">পরিমাণ (টাকা)</label>
+                            <input type="number" class="form-input" id="ledgerAmount" value="2" min="1">
+                        </div>
+                        <div class="form-group" id="ledgerItemGroup" style="display:none;">
+                            <label class="form-label" for="ledgerItem">খাবারের নাম</label>
+                            <input type="text" class="form-input" id="ledgerItem" placeholder="যেমন: ভুনা চাল">
+                        </div>
+                        <button class="btn btn-primary btn-sm" style="width:100%;" onclick="addLedgerEntry()">
+                            <i class="fas fa-save"></i> সংরক্ষণ করুন
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-history"></i> সাম্প্রতিক এন্ট্রি</div>
+                        <div id="ledgerList" style="max-height:250px; overflow-y:auto;"></div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-chart-bar"></i> দৈনিক চাঁদাবাজি</div>
+                        <div class="chart-container">
+                            <canvas id="cashChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-chart-pie"></i> চুরি হওয়া খাবার</div>
+                        <div class="chart-container">
+                            <canvas id="foodChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="panel-m5" aria-label="SOS রেসকিউ ফ্লেয়ার">
+            <div style="text-align:center; padding:40px 0 30px;">
+                <p style="color:var(--muted); font-size:0.85rem; margin-bottom:24px;">কুদ্দুস করিডোরে ধরলে এই বাটন চাপুন</p>
+                <button class="sos-btn" onclick="triggerSOS()" aria-label="SOS অ্যালার্ট পাঠান">
+                    SOS
+                </button>
+                <div style="margin-top:24px; max-width:300px; margin-left:auto; margin-right:auto;">
+                    <select class="form-select" id="sosLocation">
+                        <option value="classroom">ক্লাসরুম</option>
+                        <option value="corridor">করিডোর</option>
+                        <option value="library">লাইব্রেরি</option>
+                        <option value="playground">খেলার মাঠ</option>
+                        <option value="canteen">ক্যান্টিন</option>
+                        <option value="washroom">ওয়াশরুম</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-broadcast-tower"></i> অ্যাক্টিভ অ্যালার্ট ড্যাশবোর্ড
+                    <span style="margin-left:auto; font-size:0.75rem; color:var(--accent);" id="activeSosCount">0 টি অ্যালার্ট</span>
+                </div>
+                <p style="font-size:0.78rem; color:var(--muted); margin-bottom:16px;">বিল্টু ও মিল্টুর জন্য — রিয়েল-টাইম ডিস্ট্রেস সিগন্যাল</p>
+                <div id="sosAlerts">
+                    <div class="empty-state">
+                        <i class="fas fa-shield-alt"></i>
+                        <p>কোনো অ্যাক্টিভ SOS অ্যালার্ট নেই</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="panel-m6" aria-label="ফ্যাক্ট চেকার">
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-title"><i class="fas fa-balance-scale"></i> কুদ্দুসের দাবি যাচাই করুন</div>
+                <p style="font-size:0.82rem; color:var(--muted); margin-bottom:16px;">
