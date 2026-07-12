@@ -1,0 +1,467 @@
+কুদ্দুস ভুয়া নিয়ম বানিয়ে বলছে? স্কুলের আসল নিয়মাবলীতে খুঁজে দেখুন।
+                </p>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" class="form-input" id="factSearchInput" placeholder="কুদ্দুস কী বলেছে সেটা লিখুন..." style="flex:1;">
+                    <button class="btn btn-primary" onclick="searchFact()">
+                        <i class="fas fa-search"></i> খুঁজুন
+                    </button>
+                </div>
+            </div>
+            <div id="factResults">
+                <div class="card">
+                    <div class="empty-state">
+                        <i class="fas fa-gavel"></i>
+                        <p>উপরে কুদ্দুসের দাবি লিখে সার্চ করুন</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="impeachment-overlay" id="impeachmentOverlay">
+        <h1>IMPEACHED</h1>
+        <p>কোডু কুদ্দুস অপসারিত হয়েছে!</p>
+        <p style="font-size:0.9rem; margin-top:8px; color:var(--ember);">ক্লাস ৭-B আবার মুক্ত!</p>
+        <button class="btn btn-secondary" style="margin-top:30px;" onclick="dismissImpeachment()">
+            <i class="fas fa-times"></i> বন্ধ করুন
+        </button>
+    </div>
+
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <!-- ইন্টারঅ্যাক্টিভিটির স্ক্রিপ্ট সমূহ -->
+    <script>
+        const APP_KEY = 'akp_';
+        let state = {
+            loggedIn: false,
+            currentRoll: null,
+            complaints: [],
+            students: [],
+            ledger: [],
+            sosAlerts: [],
+            gridCols: 6,
+            gridRows: 5
+        };
+
+        function loadState() {
+            try {
+                const complaints = localStorage.getItem(APP_KEY + 'complaints');
+                const students = localStorage.getItem(APP_KEY + 'students');
+                const ledger = localStorage.getItem(APP_KEY + 'ledger');
+                const sos = localStorage.getItem(APP_KEY + 'sos');
+                if (complaints) state.complaints = JSON.parse(complaints);
+                if (students) state.students = JSON.parse(students);
+                if (ledger) state.ledger = JSON.parse(ledger);
+                if (sos) state.sosAlerts = JSON.parse(sos);
+            } catch (e) {
+                console.warn('স্টেট লোড করতে সমস্যা:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(APP_KEY + 'complaints', JSON.stringify(state.complaints));
+                localStorage.setItem(APP_KEY + 'students', JSON.stringify(state.students));
+                localStorage.setItem(APP_KEY + 'ledger', JSON.stringify(state.ledger));
+                localStorage.setItem(APP_KEY + 'sos', JSON.stringify(state.sosAlerts));
+            } catch (e) {
+                console.warn('স্টেট সেভ করতে সমস্যা:', e);
+            }
+        }
+
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return 'AKP-' + Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
+        }
+
+        function generateSecretCode(roll) {
+            return (roll * 7 + 3) % 100;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-circle', info: 'fa-info-circle' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3200);
+        }
+
+        function formatTime(timestamp) {
+            const d = new Date(timestamp);
+            return d.toLocaleDateString('bn-BD') + ' ' + d.toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        const categoryNames = {
+            tifin_theft: 'টিফিন চুরি',
+            bribe: 'ঘুষ (ওয়াশরুম)',
+            syllabus_bloat: 'সিলেবাস ব্লোট',
+            seat_plan: 'সিট প্ল্যান',
+            sports_abuse: 'খেলাধুলা নিয়ন্ত্রণ',
+            other: 'অন্যান্য'
+        };
+
+        const categoryColors = {
+            tifin_theft: '#2ecc71',
+            bribe: '#f39c12',
+            syllabus_bloat: '#e74c3c',
+            seat_plan: '#9b59b6',
+            sports_abuse: '#3498db',
+            other: '#95a5a6'
+        };
+
+        const locationNames = {
+            classroom: 'ক্লাসরুম',
+            corridor: 'করিডোর',
+            library: 'লাইব্রেরি',
+            playground: 'খেলার মাঠ',
+            canteen: 'ক্যান্টিন',
+            washroom: 'ওয়াশরুম'
+        };
+
+        const panelTitles = {
+            m1: 'মিশন ১: স্ট্রাইক পোর্টাল',
+            m2: 'মিশন ২: সিট প্ল্যানার',
+            m3: 'মিশন ৩: সিলেবাস পার্সার',
+            m4: 'মিশন ৪: অর্থনৈতিক লেজার',
+            m5: 'মিশন ৫: SOS রেসকিউ ফ্লেয়ার',
+            m6: 'মিশন ৬: ফ্যাক্ট চেকার'
+        };
+
+        function switchPanel(id) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            const panel = document.getElementById('panel-' + id);
+            if (panel) panel.classList.add('active');
+            const navItem = document.querySelector(`.nav-item[data-panel="${id}"]`);
+            if (navItem) navItem.classList.add('active');
+
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('show');
+            }
+
+            if (id === 'm4') {
+                setTimeout(() => { updateCharts(); }, 100);
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('show');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                document.getElementById('mainContent').classList.toggle('expanded');
+            }
+        }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    item.click();
+                }
+            });
+        });
+
+        function handleLogin() {
+            const roll = parseInt(document.getElementById('rollInput').value);
+            const code = parseInt(document.getElementById('codeInput').value);
+
+            if (!roll || roll < 1 || roll > 40) {
+                showToast('সঠিক রোল নম্বর দিন (১-৪০)', 'error');
+                return;
+            }
+
+            const expectedCode = generateSecretCode(roll);
+            if (code !== expectedCode) {
+                showToast('গোপন কোড ভুল! বিল্টুর কাছে নিশ্চিত হন।', 'error');
+                return;
+            }
+
+            state.loggedIn = true;
+            state.currentRoll = roll;
+            document.getElementById('loginPanel').style.display = 'none';
+            document.getElementById('complaintPanel').style.display = 'block';
+            showToast(`রোল ${roll} হিসেবে গোপনে প্রবেশ সম্পন্ন`, 'success');
+            updateStrikeBar();
+            renderComplaints();
+        }
+
+        function submitComplaint() {
+            const category = document.getElementById('complaintCategory').value;
+            const text = document.getElementById('complaintText').value.trim();
+
+            if (!category) {
+                showToast('ক্যাটাগরি নির্বাচন করুন', 'warning');
+                return;
+            }
+            if (!text || text.length < 10) {
+                showToast('কমপক্ষে ১০ অক্ষরে বিবরণ লিখুন', 'warning');
+                return;
+            }
+
+            const complaint = {
+                id: Date.now(),
+                category: category,
+                text: text,
+                hashedRoll: simpleHash(String(state.currentRoll)),
+                timestamp: Date.now()
+            };
+
+            state.complaints.push(complaint);
+            saveState();
+
+            document.getElementById('complaintCategory').value = '';
+            document.getElementById('complaintText').value = '';
+
+            showToast('অভিযোগ গোপনে জমা হয়েছে!', 'success');
+            updateStrikeBar();
+            renderComplaints();
+
+            if (state.complaints.length >= 3) {
+                setTimeout(() => {
+                    document.getElementById('impeachmentOverlay').classList.add('show');
+                }, 800);
+            }
+        }
+
+        function updateStrikeBar() {
+            const count = state.complaints.length;
+            const pct = Math.min((count / 3) * 100, 100);
+            const fill = document.getElementById('strikeBarFill');
+            const text = document.getElementById('strikeBarText');
+            const msg = document.getElementById('strikeMessage');
+            const badge = document.getElementById('strikeBadge');
+
+            if (fill) fill.style.width = pct + '%';
+            if (text) text.textContent = count + '/3';
+            if (badge) badge.textContent = count + '/3';
+
+            if (msg) {
+                if (count === 0) {
+                    msg.textContent = 'আরও অভিযোগ জমা দিন কুদ্দুসকে হটাতে!';
+                    msg.style.color = 'var(--muted)';
+                } else if (count === 1) {
+                    msg.textContent = 'প্রথম স্ট্রাইক! আরও ২টি লাগবে।';
+                    msg.style.color = 'var(--warning)';
+                } else if (count === 2) {
+                    msg.textContent = 'দ্বিতীয় স্ট্রাইক! আর মাত্র ১টি!';
+                    msg.style.color = 'var(--accent)';
+                } else {
+                    msg.textContent = 'ইমপিচমেন্ট সক্রিয়! কুদ্দুস অপসারিত!';
+                    msg.style.color = 'var(--success)';
+                }
+            }
+        }
+
+        function renderComplaints() {
+            const list = document.getElementById('complaintList');
+            if (!list) return;
+            if (state.complaints.length === 0) {
+                list.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>এখনো কোনো অভিযোগ নেই</p></div>';
+                return;
+            }
+
+            list.innerHTML = state.complaints.slice().reverse().map(c => `
+                <div class="complaint-card">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <span class="cat-badge" style="background:${categoryColors[c.category]}22; color:${categoryColors[c.category]};">
+                            ${categoryNames[c.category]}
+                        </span>
+                        <span style="margin-left:auto; font-size:0.68rem; color:var(--muted);">${formatTime(c.timestamp)}</span>
+                    </div>
+                    <p style="font-size:0.84rem; line-height:1.5; color:var(--text);">${c.text}</p>
+                    <p style="font-size:0.65rem; color:var(--muted); margin-top:6px; font-family:monospace;">
+                        <i class="fas fa-fingerprint" style="margin-right:4px;"></i>${c.hashedRoll}
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        function dismissImpeachment() {
+            document.getElementById('impeachmentOverlay').classList.remove('show');
+        }
+
+        const sampleStudents = [
+            { name: 'রাফি', roll: 3, height: 148, isKuddus: false },
+            { name: 'তানভীর', roll: 5, height: 152, isKuddus: false },
+            { name: 'সাকিব', roll: 7, height: 145, isKuddus: false },
+            { name: 'নাফিস', roll: 9, height: 158, isKuddus: false },
+            { name: 'আরিف', roll: 11, height: 163, isKuddus: false },
+            { name: 'সুমন', roll: 13, height: 170, isKuddus: false },
+            { name: 'রাহাত', roll: 15, height: 155, isKuddus: false },
+            { name: 'ফাহিম', roll: 17, height: 167, isKuddus: false },
+            { name: 'মেহেদী', roll: 19, height: 160, isKuddus: false },
+            { name: 'ইমরান', roll: 21, height: 172, isKuddus: false },
+            { name: 'তাসনিম', roll: 23, height: 143, isKuddus: false },
+            { name: 'জান্নাতুল', roll: 25, height: 150, isKuddus: false },
+            { name: 'প্রীতি', roll: 27, height: 147, isKuddus: false },
+            { name: 'শাহরিয়ার', roll: 29, height: 165, isKuddus: false },
+            { name: 'কুদ্দুস', roll: 1, height: 156, isKuddus: true },
+        ];
+
+        function initStudents() {
+            if (state.students.length === 0) {
+                state.students = [...sampleStudents];
+                saveState();
+            }
+        }
+
+        function addStudent() {
+            const name = document.getElementById('stuName').value.trim();
+            const roll = parseInt(document.getElementById('stuRoll').value);
+            const height = parseInt(document.getElementById('stuHeight').value);
+
+            if (!name) { showToast('নাম দিন', 'warning'); return; }
+            if (!roll || roll < 1) { showToast('সঠিক রোল দিন', 'warning'); return; }
+            if (!height || height < 100 || height > 200) { showToast('উচ্চতা ১০০-২০০ সে.ми. এর মধ্যে হতে হবে', 'warning'); return; }
+            if (state.students.find(s => s.roll === roll)) { showToast('এই রোল আগে থেকেই আছে', 'error'); return; }
+
+            state.students.push({ name, roll, height, isKuddus: false });
+            saveState();
+            document.getElementById('stuName').value = '';
+            document.getElementById('stuRoll').value = '';
+            document.getElementById('stuHeight').value = '';
+            renderStudents();
+            renderGrid();
+            showToast(`${name} যোগ হয়েছে`, 'success');
+        }
+
+        function addKuddus() {
+            if (state.students.find(s => s.isKuddus)) {
+                showToast('কুদ্দুস ইতিমধ্যে আছে', 'warning');
+                return;
+            }
+            state.students.push({ name: 'কুদ্দুস', roll: 1, height: 156, isKuddus: true });
+            saveState();
+            renderStudents();
+            renderGrid();
+            showToast('কুদ্দুস যোগ হয়েছে — সিট প্ল্যানে দেখুন', 'info');
+        }
+
+        function removeStudent(roll) {
+            state.students = state.students.filter(s => s.roll !== roll);
+            saveState();
+            renderStudents();
+            renderGrid();
+        }
+
+        function autoArrange() {
+            const kuddus = state.students.filter(s => s.isKuddus);
+            const others = state.students.filter(s => !s.isKuddus).sort((a, b) => a.height - b.height);
+
+            const arranged = [...others];
+            const kuddusIndex = Math.min(12 + 2, arranged.length);
+            arranged.splice(kuddusIndex, 0, ...kuddus);
+
+            state.students = arranged;
+            saveState();
+            renderStudents();
+            renderGrid();
+            showToast('উচ্চতা অনুযায়ী সাজানো হয়েছে — ছোটরা সামনে, কুদ্দুস ৩য় সারিতে', 'success');
+        }
+
+        function getDeskColor(height) {
+            if (height < 150) return 'rgba(46,204,113,0.12)';
+            if (height < 160) return 'rgba(243,156,18,0.12)';
+            return 'rgba(230,57,70,0.12)';
+        }
+
+        function getDeskBorderColor(height) {
+            if (height < 150) return 'rgba(46,204,113,0.3)';
+            if (height < 160) return 'rgba(243,156,18,0.3)';
+            return 'rgba(230,57,70,0.3)';
+        }
+
+        function renderStudents() {
+            const list = document.getElementById('studentList');
+            const count = document.getElementById('studentCount');
+            if (count) count.textContent = state.students.length + ' জন';
+            if (!list) return;
+
+            if (state.students.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fas fa-user-slash" style="font-size:1.5rem;"></i><p>কোনো শিক্ষার্থী নেই</p></div>';
+                return;
+            }
+
+            list.innerHTML = state.students.map(s => `
+                <div class="student-row">
+                    ${s.isKuddus ? '<i class="fas fa-crown" style="color:var(--accent);"></i>' : '<i class="fas fa-user" style="color:var(--muted);"></i>'}
+                    <span style="font-weight:600; color:${s.isKuddus ? 'var(--accent)' : 'var(--text)'};">${s.name}</span>
+                    <span style="color:var(--muted); font-size:0.75rem;">রোল: ${s.roll}</span>
+                    <span class="height-badge">${s.height} সে.মি.</span>
+                    <button class="remove-btn" onclick="removeStudent(${s.roll})" title="সরান" aria-label="${s.name} সরান">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('classroomGrid');
+            if (!grid) return;
+            const totalSeats = state.gridCols * state.gridRows;
+            grid.style.gridTemplateColumns = `repeat(${state.gridCols}, 1fr)`;
+
+            let html = '';
+            for (let i = 0; i < totalSeats; i++) {
+                const student = state.students[i];
+                if (student) {
+                    const isK = student.isKuddus;
+                    html += `
+                        <div class="desk occupied ${isK ? 'kuddus' : ''}"
+                             style="background:${isK ? 'rgba(230,57,70,0.1)' : getDeskColor(student.height)};
+                                    border-color:${isK ? 'var(--accent)' : getDeskBorderColor(student.height)};">
+                            ${isK ? '<i class="fas fa-crown" style="color:var(--accent);font-size:0.65rem;margin-bottom:2px;"></i>' : ''}
+                            <div class="desk-name" style="${isK ? 'color:var(--accent);' : ''}">${student.name}</div>
+                            <div class="desk-info">রোল ${student.roll} | ${student.height}cm</div>
+                        </div>
+                    `;
+                } else {
+                    html += '<div class="desk" style="opacity:0.3;"><div class="desk-name" style="color:var(--muted);">ফাঁকা</div></div>';
+                }
+            }
+            grid.innerHTML = html;
+        }
+
+        function parseSyllabus() {
+            const text = document.getElementById('syllabusInput').value.trim();
+            if (!text || text.length < 20) {
+                showToast('সিলেবাস টেক্সট পেস্ট করুন', 'warning');
+                return;
+            }
+
+            const garbagePhrases = [
+                'বারকোড', 'barcode', 'isbn', 'প্রকাশক', 'পেছনের কভার', 'মুদ্রণ',
+                'লেখকের জীবনী', 'জীবনী', 'ইনডেক্স', 'index', 'সূচিপত্র',
+                'ঠিকানা', 'ফোন নম্বর', 'ইমেইল', 'ওয়েবসাইট', 'কপিরাইট',
+                'প্রথম প্রকাশ', 'দ্বিতীয় প্রকাশ', 'সংস্করণ', 'মূল্য',
+                'প্রচ্ছদ', 'cover', 'সহায়ক', 'appendix'
+            ];
+
+            const chapterPatterns = [
+                /অধ্যায়\s*[০-৯]+[^।\n]*/gi,
+                /ধারা[\s০-৯]+[^।\n]*/gi,
+                /পাঠ[\s০-৯]+[^।\n]*/gi,
+                /অংশ[\s০-৯]+[^।\n]*/gi,
+                /chapter\s*\d+[^.\n]*/gi,
+                /unit\s*\d+[^.\n]*/gi,
+                /(?:section|part)\s*\d+[^.\n]*/gi
+            ];
+
+            let topics = [];
+
+            chapterPatterns.forEach(pattern => {
+                const matches = text.match(pattern);
+ 
